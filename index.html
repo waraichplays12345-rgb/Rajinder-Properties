@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rajinder Properties</title>
+    
+    <!-- Bulletproof Font Loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        /* Force the premium font universally across every single element */
+        * { font-family: 'Poppins', sans-serif !important; }
+    </style>
+
+        
+    
+    
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- UMD React (Guaranteed to work everywhere) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body class="bg-gray-50 text-slate-800">
+    <div id="root"></div>
+    <script type="text/babel" data-type="module">
+        const { useState, useEffect } = React;
+        const { createRoot } = ReactDOM;
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('home');
+            const [properties, setProperties] = useState([]);
+            
+            // Admin Auth
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [showAdminLogin, setShowAdminLogin] = useState(false);
+            const [adminPasswordInput, setAdminPasswordInput] = useState("");
+            const [loginError, setLoginError] = useState("");
+            const [adminView, setAdminView] = useState('settings'); // 'properties' | 'settings'
+
+            // --- NEW: SITE CONTENT CONFIGURATION (Live Editing) ---
+            const defaultSiteConfig = {
+                heroTitle: "Find Your Dream Property in Sector 168",
+                heroSubtitle: "Premium Apartments, Guest Houses, and Commercial Spaces.",
+                heroBg: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1600",
+                heroAlign: "text-center",
+                aboutText: "Established in 2015, Rajinder Properties is the premier real estate agency in Sector 168, Noida. With nearly a decade of trusted experience and a deep understanding of the local market, we help families and businesses find their perfect space—whether it's a luxury apartment, a comfortable rental, or a short-term guest house stay. We pride ourselves on transparency, customer satisfaction, and a seamless property finding experience.",
+                footerBio: "Your trusted real estate partner in Sector 168 since 2015. We specialize in sales, rentals, and guest houses at The Golden Palm Society and beyond.",
+                address: "Shop no 36 Tower-O, The Golden Palm Society, Sector 168, Noida",
+                phone1: "+91 99531-60717",
+                phone2: "+91 99582-96979",
+                email: "rajinderproperties01@gmail.com",
+                est: "2015"
+            };
+
+            const [siteConfig, setSiteConfig] = useState(() => {
+                const saved = localStorage.getItem('rajinder_site_config_v5');
+                return saved ? JSON.parse(saved) : defaultSiteConfig;
+            });
+
+            // Automatically save site edits to LocalStorage
+            useEffect(() => {
+                localStorage.setItem('rajinder_site_config_v5', JSON.stringify(siteConfig));
+            }, [siteConfig]);
+
+            // Filters
+            const [searchQuery, setSearchQuery] = useState("");
+            const [rentOrBuy, setRentOrBuy] = useState("All");
+            const [sortOrder, setSortOrder] = useState("default");
+
+            // Modal & Gallery
+            const [quickViewProp, setQuickViewProp] = useState(null);
+            const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+            // New Property Form
+            const [newProp, setNewProp] = useState({
+                title: "", price: "", numPrice: "", propertyType: "3 BHK Apartment",
+                bedrooms: "3", bathrooms: "3", sqft: "", location: "Sector 168, Noida",
+                imageUrl: "", additionalImages: ["", "", ""], description: "", duration: "Rent",
+                amenities: ""
+            });
+            const [postingStatus, setPostingStatus] = useState("");
+            const [editingPropId, setEditingPropId] = useState(null);
+
+            // Load Properties
+            useEffect(() => {
+                const localData = localStorage.getItem('rajinder_properties_data_v11');
+                if (localData) {
+                    setProperties(JSON.parse(localData));
+                } else {
+                    const demo = [
+                        { id: "1", title: "Premium 3 BHK Apartment", price: "1.65 Cr", numPrice: 16500000, propertyType: "3 BHK Apartment", duration: "Sale", imageUrl: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=800", additionalImages: ["https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800", "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800"], location: "Sector 168, Noida", bedrooms: "3", bathrooms: "3", sqft: "1950", description: "Spacious 3 BHK apartment featuring vitrified tile flooring, modular kitchen, and city views.", amenities: "Swimming Pool, 24x7 Security, Clubhouse, Gymnasium, Reserved Parking" },
+                        { id: "2", title: "Luxury Guest House", price: "₹2,500 / day", numPrice: 2500, propertyType: "Guest House", duration: "Per Day", imageUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800", additionalImages: [], location: "The Golden Palm Society, Sector 168", bedrooms: "1", bathrooms: "1", sqft: "500", description: "Fully furnished guest house available for short daily stays. Includes WiFi and AC.", amenities: "High-Speed WiFi, Power Backup, Daily Housekeeping, Air Conditioning" },
+                        { id: "3", title: "2 BHK For Rent", price: "₹25,000 / mo", numPrice: 25000, propertyType: "2 BHK Apartment", duration: "Rent", imageUrl: "https://images.unsplash.com/photo-1502672260266-1c1de2d93688?auto=format&fit=crop&w=800", additionalImages: ["https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=800"], location: "Sector 168, Noida", bedrooms: "2", bathrooms: "2", sqft: "1250", description: "Beautifully maintained 2 BHK with open views. Perfect for working professionals.", amenities: "Gated Security, Park View, Dedicated Parking, Power Backup" }
+                    ];
+                    setProperties(demo);
+                    localStorage.setItem('rajinder_properties_data_v11', JSON.stringify(demo));
+                }
+            }, []);
+
+            // Admin Handlers
+            const handleAdminLogin = (e) => {
+                e.preventDefault();
+                if (adminPasswordInput === 'rajinder123' || adminPasswordInput === 'admin123') {
+                    setIsAdmin(true);
+                    setShowAdminLogin(false);
+                    setAdminPasswordInput("");
+                    setLoginError("");
+                    setActiveTab('admin');
+                } else {
+                    setLoginError("Incorrect password. Try rajinder123");
+                }
+            };
+            const handleAdminLogout = () => { setIsAdmin(false); setActiveTab('home'); };
+
+            const handleDeleteProperty = (id) => {
+                const updated = properties.filter(p => p.id !== id);
+                setProperties(updated);
+                localStorage.setItem('rajinder_properties_data_v11', JSON.stringify(updated));
+            };
+
+            const handleEditProperty = (prop) => {
+                setEditingPropId(prop.id);
+                setNewProp({
+                    title: prop.title || "", price: prop.price || "", numPrice: prop.numPrice || "", 
+                    propertyType: prop.propertyType || "3 BHK Apartment", bedrooms: prop.bedrooms || "", 
+                    bathrooms: prop.bathrooms || "", sqft: prop.sqft || "", location: prop.location || "",
+                    imageUrl: prop.imageUrl || "", 
+                    additionalImages: prop.additionalImages && prop.additionalImages.length > 0 ? [...prop.additionalImages, "", "", ""].slice(0,3) : ["", "", ""], 
+                    description: prop.description || "", duration: prop.duration || "Rent", amenities: prop.amenities || ""
+                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const cancelEdit = () => {
+                setEditingPropId(null);
+                setNewProp({
+                    title: "", price: "", numPrice: "", propertyType: "3 BHK Apartment",
+                    bedrooms: "3", bathrooms: "3", sqft: "", location: "Sector 168, Noida",
+                    imageUrl: "", additionalImages: ["", "", ""], description: "", duration: "Rent", amenities: ""
+                });
+            };
+
+            const handleAddPropertySubmit = (e) => {
+                e.preventDefault();
+                if (!newProp.title || !newProp.price) {
+                    setPostingStatus("Please fill in title and price.");
+                    return;
+                }
+                const formattedImages = newProp.additionalImages.filter(url => url && url.trim() !== "");
+                
+                let updated;
+                if (editingPropId) {
+                    updated = properties.map(p => p.id === editingPropId ? { ...newProp, id: editingPropId, additionalImages: formattedImages, numPrice: parseInt(newProp.numPrice) || 0 } : p);
+                    setPostingStatus("Property Updated Successfully!");
+                } else {
+                    const newListing = { ...newProp, id: Math.random().toString(36).substr(2, 9), additionalImages: formattedImages, numPrice: parseInt(newProp.numPrice) || 0 };
+                    updated = [newListing, ...properties];
+                    setPostingStatus("Property Published Successfully!");
+                }
+                
+                setProperties(updated);
+                localStorage.setItem('rajinder_properties_data_v11', JSON.stringify(updated));
+                
+                setTimeout(() => {
+                    setPostingStatus("");
+                    setEditingPropId(null);
+                    setNewProp({
+                        title: "", price: "", numPrice: "", propertyType: "3 BHK Apartment",
+                        bedrooms: "3", bathrooms: "3", sqft: "", location: "Sector 168, Noida",
+                        imageUrl: "", additionalImages: ["", "", ""], description: "", duration: "Rent", amenities: ""
+                    });
+                }, 1500);
+            };
+
+            // Gallery Navigation
+            const nextImage = () => {
+                if(!quickViewProp) return;
+                const total = 1 + (quickViewProp.additionalImages?.length || 0);
+                setCurrentImageIndex((prev) => (prev + 1) % total);
+            };
+            const prevImage = () => {
+                if(!quickViewProp) return;
+                const total = 1 + (quickViewProp.additionalImages?.length || 0);
+                setCurrentImageIndex((prev) => (prev - 1 + total) % total);
+            };
+
+            // UI Renderers
+            const renderHeader = () => (
+                <header className="bg-slate-900 text-white shadow-lg sticky top-0 z-50">
+                    <div className="bg-slate-950 w-full border-b border-white/10">
+                        <div className="max-w-7xl mx-auto py-2 px-4 text-xs md:text-sm flex justify-center md:justify-end items-center w-full">
+                            <div className="flex space-x-6 text-gray-300">
+                                <span className="flex items-center font-medium"><i className="fa-solid fa-phone mr-2 text-yellow-500" style={{fontSize: "14px"}}></i> {siteConfig.phone1} &nbsp;|&nbsp; {siteConfig.phone2}</span>
+                                <span className="hidden md:flex items-center font-medium"><i className="fa-solid fa-envelope mr-2 text-yellow-500" style={{fontSize: "14px"}}></i> {siteConfig.email}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('home')}>
+                            <i className="fa-solid fa-city text-yellow-500" style={{fontSize: "36px"}}></i>
+                            <div>
+                                <h1 className="text-2xl font-bold leading-none tracking-tight">Rajinder</h1>
+                                <p className="text-[10px] font-bold text-yellow-500 tracking-widest mt-1">PROPERTIES</p>
+                            </div>
+                        </div>
+                        <nav className="hidden md:flex items-center space-x-8">
+                            <button onClick={() => setActiveTab('home')} className={`font-semibold transition hover:text-yellow-500 ${activeTab === 'home' ? 'text-yellow-500' : 'text-slate-300'}`}>Home</button>
+                            <button onClick={() => setActiveTab('properties')} className={`font-semibold transition hover:text-yellow-500 ${activeTab === 'properties' ? 'text-yellow-500' : 'text-slate-300'}`}>Browse Properties</button>
+                            <button onClick={() => setActiveTab('about')} className={`font-semibold transition hover:text-yellow-500 ${activeTab === 'about' ? 'text-yellow-500' : 'text-slate-300'}`}>About Us</button>
+                            <button onClick={() => setActiveTab('contact')} className={`font-semibold transition hover:text-yellow-500 ${activeTab === 'contact' ? 'text-yellow-500' : 'text-slate-300'}`}>Contact</button>
+                        </nav>
+                    </div>
+                </header>
+            );
+
+            const renderAdminPanel = () => (
+                <div className="max-w-5xl mx-auto p-4 md:p-8 py-12 min-h-[60vh]">
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <h2 className="text-3xl font-bold text-slate-900 tracking-tight flex items-center"><i className="fa-solid fa-shield-halved mr-3 text-emerald-500" style={{fontSize: "32px"}}></i> Admin Portal</h2>
+                            <p className="text-slate-500 mt-2 font-medium">Fully control your website content and listings.</p>
+                        </div>
+                        <button onClick={handleAdminLogout} className="text-red-500 hover:text-red-700 font-bold flex items-center bg-red-50 px-4 py-2 rounded-lg transition"><i className="fa-solid fa-unlock mr-2" style={{fontSize: "18px"}}></i> Logout</button>
+                    </div>
+
+                    {/* Admin Navigation Tabs */}
+                    <div className="flex space-x-4 mb-8">
+                        <button onClick={() => setAdminView('settings')} className={`px-6 py-3 rounded-xl font-bold flex items-center transition ${adminView === 'settings' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 border hover:bg-gray-50'}`}><i className="fa-solid fa-gear mr-2" style={{fontSize: "18px"}}></i> Site Settings</button>
+                        <button onClick={() => setAdminView('properties')} className={`px-6 py-3 rounded-xl font-bold flex items-center transition ${adminView === 'properties' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 border hover:bg-gray-50'}`}><i className="fa-solid fa-table-columns mr-2" style={{fontSize: "18px"}}></i> Manage Properties</button>
+                    </div>
+                    
+                    {/* WEBSITE SETTINGS VIEW */}
+                    {adminView === 'settings' && (
+                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-12">
+                            <h3 className="text-xl font-bold mb-6 flex items-center text-slate-900"><i className="fa-regular fa-image mr-2 text-yellow-500"></i> Live Website Editor</h3>
+                            
+                            <div className="space-y-6">
+                                {/* Hero Settings */}
+                                <div className="p-6 bg-slate-50 rounded-xl border border-slate-100">
+                                    <h4 className="font-bold text-lg mb-4 text-slate-800">Homepage Hero Section</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Main Headline</label>
+                                            <input type="text" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.heroTitle} onChange={e=>setSiteConfig({...siteConfig, heroTitle: e.target.value})}/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Subtitle / Tagline</label>
+                                            <input type="text" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.heroSubtitle} onChange={e=>setSiteConfig({...siteConfig, heroSubtitle: e.target.value})}/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Background Image URL</label>
+                                            <input type="text" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.heroBg} onChange={e=>setSiteConfig({...siteConfig, heroBg: e.target.value})}/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Text Alignment</label>
+                                            <select className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.heroAlign} onChange={e=>setSiteConfig({...siteConfig, heroAlign: e.target.value})}>
+                                                <option value="text-left">Left Aligned</option>
+                                                <option value="text-center">Center Aligned</option>
+                                                <option value="text-right">Right Aligned</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* About & Brand */}
+                                <div className="p-6 bg-slate-50 rounded-xl border border-slate-100">
+                                    <h4 className="font-bold text-lg mb-4 text-slate-800">About Us & Brand</h4>
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Established Year</label>
+                                        <input type="text" className="p-4 border border-gray-200 rounded-xl w-full md:w-1/3 bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.est} onChange={e=>setSiteConfig({...siteConfig, est: e.target.value})}/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">About Us Description</label>
+                                        <textarea rows="4" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.aboutText} onChange={e=>setSiteConfig({...siteConfig, aboutText: e.target.value})}></textarea>
+                                    </div>
+                                </div>
+
+                                {/* Contact Details */}
+                                <div className="p-6 bg-slate-50 rounded-xl border border-slate-100">
+                                    <h4 className="font-bold text-lg mb-4 text-slate-800">Contact Information</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Primary Phone</label>
+                                            <input type="text" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.phone1} onChange={e=>setSiteConfig({...siteConfig, phone1: e.target.value})}/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Secondary Phone</label>
+                                            <input type="text" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.phone2} onChange={e=>setSiteConfig({...siteConfig, phone2: e.target.value})}/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Email Address</label>
+                                            <input type="text" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.email} onChange={e=>setSiteConfig({...siteConfig, email: e.target.value})}/>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-700 mb-2">Physical Address</label>
+                                            <input type="text" className="p-4 border border-gray-200 rounded-xl w-full bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={siteConfig.address} onChange={e=>setSiteConfig({...siteConfig, address: e.target.value})}/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center text-emerald-600 bg-emerald-50 p-4 rounded-xl font-bold">
+                                    <i className="fa-solid fa-circle-check mr-2" style={{fontSize: "24px"}}></i> All changes are saved automatically and reflect instantly on the live website.
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PROPERTIES VIEW */}
+                    {adminView === 'properties' && (
+                        <>
+                        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 mb-12">
+                            <h3 className="text-xl font-bold mb-6 flex items-center text-slate-900">{editingPropId ? <i className="fa-solid fa-pencil mr-2 text-blue-500"></i> : <i className="fa-solid fa-plus mr-2 text-yellow-500"></i>} {editingPropId ? "Edit Property" : "Post New Property"}</h3>
+                            <form onSubmit={handleAddPropertySubmit} className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Property Title</label>
+                                        <input type="text" placeholder="e.g. 3 BHK Luxury Apartment" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={newProp.title} onChange={e=>setNewProp({...newProp, title: e.target.value})} required/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Property Type</label>
+                                        <select className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white focus:ring-2 focus:ring-yellow-500 outline-none" value={newProp.propertyType} onChange={e=>setNewProp({...newProp, propertyType: e.target.value})}>
+                                            <option>1 BHK Apartment</option>
+                                            <option>2 BHK Apartment</option>
+                                            <option>3 BHK Apartment</option>
+                                            <option>4 BHK Apartment</option>
+                                            <option>Studio Apartment</option>
+                                            <option>Commercial Space</option>
+                                            <option>Guest House</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Display Price</label>
+                                        <input type="text" placeholder="e.g. 1.65 Cr or ₹25,000/mo" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.price} onChange={e=>setNewProp({...newProp, price: e.target.value})} required/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Numeric Price (For Sorting)</label>
+                                        <input type="number" placeholder="e.g. 16500000" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.numPrice} onChange={e=>setNewProp({...newProp, numPrice: e.target.value})}/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Duration</label>
+                                        <select className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.duration} onChange={e=>setNewProp({...newProp, duration: e.target.value})}>
+                                            <option>Sale</option>
+                                            <option>Rent</option>
+                                            <option>Per Day (Guest House)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Society Amenities</label>
+                                    <input type="text" placeholder="e.g. Gym, Swimming Pool, 24x7 Security, Power Backup" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.amenities} onChange={e=>setNewProp({...newProp, amenities: e.target.value})}/>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Bedrooms</label>
+                                        <input type="text" placeholder="e.g. 3" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.bedrooms} onChange={e=>setNewProp({...newProp, bedrooms: e.target.value})}/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Bathrooms</label>
+                                        <input type="text" placeholder="e.g. 3" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.bathrooms} onChange={e=>setNewProp({...newProp, bathrooms: e.target.value})}/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Sq.Ft Area</label>
+                                        <input type="text" placeholder="e.g. 1950" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.sqft} onChange={e=>setNewProp({...newProp, sqft: e.target.value})}/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 mb-2">Location</label>
+                                        <input type="text" placeholder="e.g. Sector 168" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.location} onChange={e=>setNewProp({...newProp, location: e.target.value})}/>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Images (URLs)</label>
+                                    <input type="text" placeholder="Main Image URL *" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none mb-3" value={newProp.imageUrl} onChange={e=>setNewProp({...newProp, imageUrl: e.target.value})} required/>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {newProp.additionalImages.map((img, i) => (
+                                            <input key={i} type="text" placeholder={`Additional Image URL ${i+1}`} className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={img} onChange={e=>{
+                                                const newArr = [...newProp.additionalImages];
+                                                newArr[i] = e.target.value;
+                                                setNewProp({...newProp, additionalImages: newArr});
+                                            }}/>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-700 mb-2">Description</label>
+                                    <textarea placeholder="Describe the property..." rows="4" className="p-4 border border-gray-200 rounded-xl w-full bg-gray-50 focus:bg-white outline-none" value={newProp.description} onChange={e=>setNewProp({...newProp, description: e.target.value})}></textarea>
+                                </div>
+                                
+                                {postingStatus && <div className="text-emerald-600 font-bold bg-emerald-50 p-4 rounded-xl">{postingStatus}</div>}
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <button type="submit" className="w-full md:w-auto bg-slate-900 text-white font-bold py-4 px-12 rounded-xl hover:bg-slate-800 transition text-lg">
+                                        {editingPropId ? "Update Listing" : "Publish Listing"}
+                                    </button>
+                                    {editingPropId && (
+                                        <button type="button" onClick={cancelEdit} className="w-full md:w-auto bg-gray-200 text-slate-700 font-bold py-4 px-8 rounded-xl hover:bg-gray-300 transition text-lg">
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+                            </form>
+                        </div>
+
+                        <h3 className="text-xl font-bold mb-6 text-slate-900">Manage Live Listings</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {properties.map(p => (
+                                <div key={p.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center hover:shadow-md transition">
+                                    <div className="flex items-center space-x-4">
+                                        <img src={p.imageUrl} className="w-20 h-20 object-cover rounded-lg" />
+                                        <div>
+                                            <h4 className="font-bold text-slate-900 truncate max-w-[200px]">{p.title}</h4>
+                                            <p className="text-sm font-medium text-slate-500">{p.price} • {p.duration}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex space-x-2">
+                                        <button onClick={() => handleEditProperty(p)} className="text-blue-500 hover:bg-blue-50 p-3 rounded-full transition" title="Edit"><i className="fa-solid fa-pencil" style={{fontSize: "20px"}}></i></button>
+                                        <button onClick={() => handleDeleteProperty(p.id)} className="text-red-500 hover:bg-red-50 p-3 rounded-full transition" title="Delete"><i className="fa-solid fa-trash" style={{fontSize: "20px"}}></i></button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        </>
+                    )}
+                </div>
+            );
+
+            // Filtering Logic
+            let filtered = properties.filter(p => {
+                if (searchQuery) {
+                    const q = searchQuery.toLowerCase();
+                    const matchesSearch = (p.title && p.title.toLowerCase().includes(q)) || 
+                                          (p.location && p.location.toLowerCase().includes(q)) || 
+                                          (p.propertyType && p.propertyType.toLowerCase().includes(q)) || 
+                                          (p.sqft && p.sqft.toLowerCase().includes(q)) ||
+                                          (p.bedrooms && p.bedrooms.toLowerCase().includes(q));
+                    if (!matchesSearch) return false;
+                }
+                if (rentOrBuy === "Rent" && !p.duration?.toLowerCase().includes("rent") && !p.duration?.toLowerCase().includes("day")) return false;
+                if (rentOrBuy === "Sale" && !p.duration?.toLowerCase().includes("sale")) return false;
+                return true;
+            });
+
+            if (sortOrder === "low") filtered.sort((a,b) => (a.numPrice||0) - (b.numPrice||0));
+            if (sortOrder === "high") filtered.sort((a,b) => (b.numPrice||0) - (a.numPrice||0));
+
+            const renderProperties = () => (
+                <div className="p-4 md:p-8 max-w-7xl mx-auto min-h-[60vh]">
+                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+                        <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Browse Properties</h2>
+                        <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3 w-full lg:w-auto">
+                            <div className="relative flex-grow md:w-72">
+                                <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" style={{fontSize: "18px"}}></i>
+                                <input type="text" placeholder="Search location, size, type..." className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg bg-white shadow-sm font-medium outline-none focus:ring-2 focus:ring-yellow-500" value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} />
+                            </div>
+                            <div className="flex space-x-3 w-full md:w-auto">
+                                <select className="p-3 border rounded-lg bg-white shadow-sm flex-1 md:w-40 font-medium outline-none focus:ring-2 focus:ring-yellow-500" value={rentOrBuy} onChange={e=>setRentOrBuy(e.target.value)}>
+                                <option value="All">All Properties</option>
+                                <option value="Rent">For Rent / Stay</option>
+                                <option value="Sale">For Sale</option>
+                            </select>
+                            <select className="p-3 border rounded-lg bg-white shadow-sm flex-1 md:w-48 font-medium" value={sortOrder} onChange={e=>setSortOrder(e.target.value)}>
+                                <option value="default">Sort by Price</option>
+                                <option value="low">Price: Low to High</option>
+                                <option value="high">Price: High to Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        {filtered.map(p => (
+                            <div key={p.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition duration-300 flex flex-col">
+                                <div className="relative">
+                                    <img src={p.imageUrl} alt={p.title} className="w-full h-56 object-cover"/>
+                                    {(p.additionalImages && p.additionalImages.length > 0) && (
+                                        <div className="absolute top-3 right-3 bg-black/60 text-white text-xs font-bold px-2 py-1 rounded-md flex items-center">
+                                            <i className="fa-solid fa-eye mr-1" style={{fontSize: "12px"}}></i> {p.additionalImages.length + 1}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-5 flex flex-col flex-grow">
+                                    <div className="text-xs font-bold text-yellow-600 mb-2 uppercase tracking-wider">{p.propertyType}</div>
+                                    <h3 className="text-xl font-bold text-slate-900 mb-1 tracking-tight">{p.title}</h3>
+                                    <p className="text-slate-500 text-sm mb-4 flex items-center font-medium"><i className="fa-solid fa-location-dot mr-1" style={{fontSize: "14px"}}></i>{p.location}</p>
+                                    <p className="text-2xl font-bold text-slate-900 mb-4">{p.price} <span className="text-sm font-normal text-slate-500">({p.duration})</span></p>
+                                    <div className="grid grid-cols-3 gap-2 border-t pt-4 mb-4 text-center text-slate-600 text-sm mt-auto">
+                                        <div><span className="block font-bold text-slate-900">{p.bedrooms}</span>Beds</div>
+                                        <div className="border-l border-r"><span className="block font-bold text-slate-900">{p.bathrooms}</span>Baths</div>
+                                        <div><span className="block font-bold text-slate-900">{p.sqft}</span>Sq.Ft</div>
+                                    </div>
+                                    <button onClick={() => {setQuickViewProp(p); setCurrentImageIndex(0);}} className="w-full bg-slate-100 text-slate-900 font-bold py-3 rounded-lg hover:bg-yellow-500 hover:text-white transition">View Details</button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen flex flex-col font-sans bg-gray-50">
+                    {renderHeader()}
+                    
+                    {activeTab === 'home' && (
+                        <div>
+                            {/* Hero Section */}
+                            <div className={`relative bg-slate-900 text-white py-48 px-4 bg-cover bg-center bg-blend-overlay ${siteConfig.heroAlign}`} style={{ backgroundImage: `url('${siteConfig.heroBg}')` }}>
+                                <div className="max-w-3xl mx-auto">
+                                    <h2 className="text-5xl font-extrabold mb-6 leading-tight tracking-tight">{siteConfig.heroTitle}</h2>
+                                    <p className="text-xl text-slate-300 mb-10 font-medium">{siteConfig.heroSubtitle}</p>
+                                    <div className={`flex flex-col md:flex-row gap-4 ${siteConfig.heroAlign === 'text-center' ? 'justify-center' : siteConfig.heroAlign === 'text-right' ? 'justify-end' : 'justify-start'}`}>
+                                        <button onClick={() => setActiveTab('properties')} className="bg-yellow-500 text-slate-900 px-8 py-4 rounded-lg font-bold text-lg hover:bg-yellow-400 transition shadow-lg flex items-center justify-center">Browse Properties <i className="fa-solid fa-arrow-right ml-2" style={{fontSize: "20px"}}></i></button>
+                                        <button onClick={() => setActiveTab('contact')} className="bg-white/10 backdrop-blur text-white border border-white/30 px-8 py-4 rounded-lg font-bold text-lg hover:bg-white/20 transition flex items-center justify-center">Book Free Consultation</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Properties Section */}
+                            <div className="py-12">
+                                {renderProperties()}
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'properties' && renderProperties()}
+                    {activeTab === 'admin' && isAdmin && renderAdminPanel()}
+
+                    {activeTab === 'about' && (
+                        <div className="max-w-4xl mx-auto p-8 py-20 text-center min-h-[60vh]">
+                            <i className="fa-solid fa-city text-yellow-500 mx-auto mb-6" style={{fontSize: "64px"}}></i>
+                            <h2 className="text-4xl font-bold mb-6 text-slate-900 tracking-tight">About Rajinder Properties</h2>
+                            <p className="text-xl text-slate-600 leading-relaxed mb-8 font-medium">{siteConfig.aboutText}</p>
+                            <button onClick={() => setActiveTab('contact')} className="bg-slate-900 text-white px-8 py-4 rounded-lg font-bold hover:bg-slate-800">Contact Us Today</button>
+                        </div>
+                    )}
+
+                    {activeTab === 'contact' && (
+                        <div className="max-w-7xl mx-auto p-4 md:p-8 py-12 grid grid-cols-1 md:grid-cols-2 gap-12 min-h-[60vh]">
+                            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+                                <h2 className="text-3xl font-bold mb-2 text-slate-900 tracking-tight">Free Consultation</h2>
+                                <p className="text-slate-500 mb-8 font-medium">Leave your details and we will call you back shortly.</p>
+                                <form className="space-y-4" onSubmit={e=>{e.preventDefault(); alert('Consultation Booked! We will contact you soon.'); e.target.reset();}}>
+                                    <input type="text" placeholder="Your Name" className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none font-medium" required/>
+                                    <input type="tel" placeholder="Phone Number" className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none font-medium" required/>
+                                    <textarea placeholder="How can we help you?" rows="4" className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none font-medium"></textarea>
+                                    <button className="w-full bg-yellow-500 text-slate-900 font-bold py-4 rounded-lg hover:bg-yellow-400 transition text-lg">Submit Request</button>
+                                </form>
+                            </div>
+                            <div className="flex flex-col">
+                                <h2 className="text-3xl font-bold mb-6 text-slate-900 tracking-tight">Visit Our Office</h2>
+                                <div className="space-y-4 mb-8 text-slate-700 font-medium">
+                                    <p className="flex items-center text-lg"><i className="fa-solid fa-location-dot mr-3 text-yellow-500" style={{fontSize: "24px"}}></i> {siteConfig.address}</p>
+                                    <p className="flex items-center text-lg"><i className="fa-solid fa-phone mr-3 text-yellow-500" style={{fontSize: "24px"}}></i> {siteConfig.phone1} &nbsp;|&nbsp; {siteConfig.phone2}</p>
+                                    <p className="flex items-center text-lg"><i className="fa-solid fa-envelope mr-3 text-yellow-500" style={{fontSize: "24px"}}></i> {siteConfig.email}</p>
+                                </div>
+                                <div className="flex-grow bg-gray-200 rounded-2xl overflow-hidden shadow-sm min-h-[300px]">
+                                    <iframe src={`https://maps.google.com/maps?q=${encodeURIComponent(siteConfig.address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`} className="w-full h-full border-0" allowFullScreen="" loading="lazy"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Admin Login Modal */}
+                    {showAdminLogin && (
+                        <div className="fixed inset-0 bg-slate-900/80 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+                            <div className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl">
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="text-2xl font-bold text-slate-900 tracking-tight">Admin Access</h3>
+                                    <button onClick={() => setShowAdminLogin(false)} className="text-slate-400 hover:text-slate-600"><i className="fa-solid fa-xmark" style={{fontSize: "24px"}}></i></button>
+                                </div>
+                                <form onSubmit={handleAdminLogin}>
+                                    <input type="password" placeholder="Enter password (rajinder123)" className="w-full border border-gray-200 p-4 rounded-xl mb-4 focus:ring-2 focus:ring-yellow-500 outline-none font-medium bg-gray-50 focus:bg-white" value={adminPasswordInput} onChange={(e) => setAdminPasswordInput(e.target.value)} />
+                                    {loginError && <p className="text-red-500 text-sm mb-4 font-bold">{loginError}</p>}
+                                    <button type="submit" className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-colors text-lg">Login to Dashboard</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Property Details Modal */}
+                    {quickViewProp && (
+                        <div className="fixed inset-0 bg-slate-900/90 flex items-center justify-center z-[100] p-4 md:p-8 backdrop-blur-sm">
+                            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] overflow-y-auto shadow-2xl">
+                                <div className="p-6 flex justify-between items-center border-b sticky top-0 bg-white z-10">
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-slate-900 tracking-tight">{quickViewProp.title}</h3>
+                                        <p className="text-slate-500 flex items-center mt-1 font-medium"><i className="fa-solid fa-location-dot mr-1" style={{fontSize: "16px"}}></i> {quickViewProp.location}</p>
+                                    </div>
+                                    <button onClick={() => setQuickViewProp(null)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition"><i className="fa-solid fa-xmark" style={{fontSize: "24px"}}></i></button>
+                                </div>
+                                <div className="p-6">
+                                    {/* Image Gallery Slider */}
+                                    <div className="relative mb-8 group">
+                                        <img src={
+                                            currentImageIndex === 0 
+                                            ? quickViewProp.imageUrl 
+                                            : quickViewProp.additionalImages[currentImageIndex - 1]
+                                        } className="w-full h-64 md:h-96 object-cover rounded-xl shadow-sm transition-opacity duration-300"/>
+                                        
+                                        {(quickViewProp.additionalImages && quickViewProp.additionalImages.length > 0) && (
+                                            <>
+                                                <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/80 opacity-0 group-hover:opacity-100 transition"><i className="fa-solid fa-chevron-left" style={{fontSize: "24px"}}></i></button>
+                                                <button onClick={nextImage} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 text-white p-3 rounded-full hover:bg-black/80 opacity-0 group-hover:opacity-100 transition"><i className="fa-solid fa-chevron-right" style={{fontSize: "24px"}}></i></button>
+                                                <div className="absolute bottom-4 left-1/2 -translate-y-1/2 flex space-x-2">
+                                                    <div className={`w-2.5 h-2.5 rounded-full transition-colors ${currentImageIndex === 0 ? 'bg-white' : 'bg-white/50'}`}></div>
+                                                    {quickViewProp.additionalImages.map((_, idx) => (
+                                                        <div key={idx} className={`w-2.5 h-2.5 rounded-full transition-colors ${currentImageIndex === idx + 1 ? 'bg-white' : 'bg-white/50'}`}></div>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center mb-8">
+                                        <div className="text-3xl font-bold text-slate-900">{quickViewProp.price}</div>
+                                        <div className="bg-yellow-100 text-yellow-800 px-4 py-1 rounded-full font-bold text-sm uppercase tracking-wide">{quickViewProp.duration}</div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                                        <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100"><i className="fa-solid fa-building mx-auto mb-2 text-slate-400"></i>{quickViewProp.propertyType}</div>
+                                        <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100"><i className="fa-solid fa-house mx-auto mb-2 text-slate-400"></i>{quickViewProp.sqft} sq.ft</div>
+                                        <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100"><span className="block font-bold text-xl mb-1">{quickViewProp.bedrooms}</span> Beds</div>
+                                        <div className="bg-gray-50 p-4 rounded-xl text-center border border-gray-100"><span className="block font-bold text-xl mb-1">{quickViewProp.bathrooms}</span> Baths</div>
+                                    </div>
+                                    
+                                    {/* AMENITIES DISPLAY */}
+                                    {quickViewProp.amenities && (
+                                        <div className="mb-8">
+                                            <h4 className="font-bold text-xl mb-3 tracking-tight">Society Amenities</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {quickViewProp.amenities.split(',').map((amenity, i) => {
+                                                    if(amenity.trim()) {
+                                                        return (
+                                                            <span key={i} className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full text-sm font-semibold border border-emerald-100 flex items-center">
+                                                                <i className="fa-solid fa-circle-check mr-2" style={{fontSize: "16px"}}></i> {amenity.trim()}
+                                                            </span>
+                                                        )
+                                                    }
+                                                    return null;
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <h4 className="font-bold text-xl mb-3 tracking-tight">Description</h4>
+                                    <p className="text-slate-600 mb-8 leading-relaxed text-lg font-medium">{quickViewProp.description}</p>
+                                    
+                                    <div className="flex flex-col md:flex-row gap-4 pt-6 border-t">
+                                        <a href={`https://wa.me/919953160717?text=Hi, I am interested in the ${quickViewProp.title} priced at ${quickViewProp.price}.`} target="_blank" className="flex-1 bg-green-500 text-white text-center py-4 rounded-xl font-bold hover:bg-green-600 transition flex justify-center items-center text-lg"><i className="fa-brands fa-whatsapp mr-2"></i> Inquire to {quickViewProp.duration?.includes('Sale') ? 'Buy' : 'Rent'}</a>
+                                        <a href={`https://wa.me/?text=Check out this property: ${quickViewProp.title} for ${quickViewProp.price}`} target="_blank" className="bg-blue-50 text-blue-600 text-center py-4 px-6 rounded-xl font-bold hover:bg-blue-100 transition flex justify-center items-center"><i className="fa-solid fa-share-nodes mr-2"></i> Share</a>
+                                        <button onClick={() => setQuickViewProp(null)} className="bg-gray-100 text-slate-700 font-bold py-4 px-8 rounded-xl hover:bg-gray-200 transition">Close Preview</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* WhatsApp Floating Button */}
+                    <a href="https://wa.me/919953160717" target="_blank" className="fixed bottom-6 right-6 bg-green-500 text-white p-4 rounded-full shadow-2xl hover:bg-green-600 z-40 transition-transform hover:scale-110 flex items-center justify-center">
+                        <i className="fa-brands fa-whatsapp" style={{fontSize: "32px"}}></i>
+                    </a>
+
+                    {/* Footer */}
+                    <footer className="bg-slate-950 text-white mt-auto py-16 px-4">
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 text-center md:text-left">
+                            <div>
+                                <div className="flex flex-col items-center md:items-start mb-4">
+                                    <h2 className="text-2xl font-bold flex items-center tracking-tight"><i className="fa-solid fa-city mr-2 text-yellow-500"></i> Rajinder Properties</h2>
+                                    {/* This is the new hidden Admin Portal trigger! */}
+                                    <span onClick={() => setShowAdminLogin(true)} className="text-yellow-500 font-bold text-sm tracking-widest mt-1 cursor-pointer hover:text-yellow-400 transition" title="Admin Portal">EST. {siteConfig.est}</span>
+                                </div>
+                                <p className="text-slate-400 font-medium leading-relaxed">{siteConfig.footerBio}</p>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold mb-4 tracking-tight">Quick Links</h3>
+                                <div className="flex flex-col space-y-3 text-slate-400 font-medium">
+                                    <p className="cursor-pointer hover:text-yellow-500" onClick={() => setActiveTab('about')}>About Us</p>
+                                    <p className="cursor-pointer hover:text-yellow-500" onClick={() => { setActiveTab('properties'); setRentOrBuy('Sale'); }}>Buy Property</p>
+                                    <p className="cursor-pointer hover:text-yellow-500" onClick={() => setActiveTab('contact')}>Contact Us</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold mb-4 tracking-tight">Our Services</h3>
+                                <div className="flex flex-col space-y-3 text-slate-400 font-medium">
+                                    <p className="cursor-pointer hover:text-yellow-500" onClick={() => { setActiveTab('properties'); setRentOrBuy('Sale'); }}>Residential Sales</p>
+                                    <p className="cursor-pointer hover:text-yellow-500" onClick={() => { setActiveTab('properties'); setRentOrBuy('Rent'); }}>Premium Rentals</p>
+                                    <p className="cursor-pointer hover:text-yellow-500" onClick={() => { setActiveTab('properties'); setRentOrBuy('All'); }}>Guest Houses</p>
+                                    <p className="cursor-pointer hover:text-yellow-500" onClick={() => { setActiveTab('properties'); setRentOrBuy('Sale'); }}>Commercial Spaces</p>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold mb-4 tracking-tight">Contact</h3>
+                                <p className="text-slate-400 mb-2 font-medium">{siteConfig.address}</p>
+                                <p className="text-slate-400 font-bold text-lg text-yellow-500">{siteConfig.phone1} <br/> {siteConfig.phone2}</p>
+                            </div>
+                        </div>
+                        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/10 flex justify-between items-center text-slate-500 text-sm font-medium">
+                            <span className="w-full text-center">
+                                &copy; {new Date().getFullYear()} Rajinder Properties (Est. {siteConfig.est}). All rights reserved.
+                            </span>
+
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
